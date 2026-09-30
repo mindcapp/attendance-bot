@@ -1,0 +1,18 @@
+# Секреты
+.env
+
+# Данные явок
+attendance.csv
+
+# Логи
+logs/
+
+# Сборка
+/attendance-bot
+*.exe
+bin/
+
+# ОС / редакторы
+.DS_Store
+.idea/
+.vscode/
