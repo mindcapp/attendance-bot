@@ -33,19 +33,16 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy to VPS
+      - name: Deploy
         run: |
-          SSH="ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
-          $SSH "mkdir -p ${{ env.REMOTE_DIR }}"
-          tar -C ${{ env.APP_DIR }} --exclude=.env --exclude=attendance.csv --exclude=logs --exclude=bin -czf - . | $SSH "tar -C ${{ env.REMOTE_DIR }} -xzf -"
-          $SSH "cd ${{ env.REMOTE_DIR }} && echo 'TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}' > .env && docker compose down && docker compose up -d"
-          sleep 5
-          for i in $(seq 1 15); do
-            if $SSH "curl -fsS http://localhost:9090/metrics > /dev/null 2>&1"; then
-              echo "Bot is up"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Bot failed"
-          exit 1
+          ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'SSHEOF'
+          mkdir -p ${{ env.REMOTE_DIR }}
+          cd ${{ env.REMOTE_DIR }}
+          tar -xzf - --exclude=.env --exclude=attendance.csv --exclude=logs --exclude=bin
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" > .env
+          docker compose down
+          docker compose up -d
+          SSHEOF
+        env:
+          DEPLOY_FILES: |
+            tar -C ${{ env.APP_DIR }} -czf - --exclude=.env --exclude=attendance.csv --exclude=logs --exclude=bin .
