@@ -8,7 +8,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/yourusername/attendance-bot/storage"
+	"github.com/mindcapp/attendance-bot/metrics"
+	"github.com/mindcapp/attendance-bot/storage"
 )
 
 const notFoundText = "Номер не найден, попробуй ещё"
@@ -202,11 +203,13 @@ func (h *Handler) finalize(cq *tgbotapi.CallbackQuery, s *session, para int) {
 	}
 
 	if err := h.attendance.Save(rec); err != nil {
+		metrics.ErrorsTotal.WithLabelValues("save_attendance").Inc()
 		log.Printf("ошибка записи явки №%d: %v", s.Student.Number, err)
 		h.edit(chatID, msgID, "Не удалось сохранить, попробуй ещё раз", statusKeyboard())
 		return
 	}
 	h.clearSession(chatID, cq.From.ID)
+	metrics.CommandsTotal.WithLabelValues("checkin").Inc()
 
 	text := fmt.Sprintf("✓ Статус записан: %s%s [%s]", s.StatusLabel, paraPhrase(para), rec.Time)
 	h.edit(chatID, msgID, text, tgbotapi.NewInlineKeyboardMarkup(

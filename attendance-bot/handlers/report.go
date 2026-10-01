@@ -12,8 +12,9 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/yourusername/attendance-bot/excel"
-	"github.com/yourusername/attendance-bot/storage"
+	"github.com/mindcapp/attendance-bot/excel"
+	"github.com/mindcapp/attendance-bot/metrics"
+	"github.com/mindcapp/attendance-bot/storage"
 )
 
 func reportMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
@@ -29,12 +30,14 @@ func reportMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 }
 
 func (h *Handler) handleReportTable(cq *tgbotapi.CallbackQuery) {
+	metrics.CommandsTotal.WithLabelValues("report_table").Inc()
 	chatID := cq.Message.Chat.ID
 	msgID := cq.Message.MessageID
 	h.answer(cq.ID, "")
 
 	records, err := h.attendance.Today(time.Now().In(h.loc))
 	if err != nil {
+		metrics.ErrorsTotal.WithLabelValues("read_attendance").Inc()
 		log.Printf("ошибка чтения явок: %v", err)
 		h.edit(chatID, msgID, "Не удалось прочитать явки", reportMenuKeyboard())
 		return
@@ -53,11 +56,13 @@ func (h *Handler) handleReportTable(cq *tgbotapi.CallbackQuery) {
 }
 
 func (h *Handler) handleReportExcel(cq *tgbotapi.CallbackQuery) {
+	metrics.CommandsTotal.WithLabelValues("report_excel").Inc()
 	chatID := cq.Message.Chat.ID
 	h.answer(cq.ID, "")
 
 	records, err := h.attendance.Today(time.Now().In(h.loc))
 	if err != nil {
+		metrics.ErrorsTotal.WithLabelValues("read_attendance").Inc()
 		log.Printf("ошибка чтения явок: %v", err)
 		h.send(tgbotapi.NewMessage(chatID, "Ошибка при создании файла"))
 		return
@@ -69,6 +74,7 @@ func (h *Handler) handleReportExcel(cq *tgbotapi.CallbackQuery) {
 
 	path, err := excel.Build(records)
 	if err != nil {
+		metrics.ErrorsTotal.WithLabelValues("excel_build").Inc()
 		log.Printf("ошибка генерации excel: %v", err)
 		h.send(tgbotapi.NewMessage(chatID, "Ошибка при создании файла"))
 		return
@@ -78,6 +84,7 @@ func (h *Handler) handleReportExcel(cq *tgbotapi.CallbackQuery) {
 	doc := tgbotapi.NewDocument(chatID, tgbotapi.FilePath(path))
 	doc.Caption = fmt.Sprintf("Явки на %s", time.Now().In(h.loc).Format("02.01.2006"))
 	if _, err := h.bot.Send(doc); err != nil {
+		metrics.ErrorsTotal.WithLabelValues("excel_send").Inc()
 		log.Printf("ошибка отправки excel: %v", err)
 		h.send(tgbotapi.NewMessage(chatID, "Ошибка при создании файла"))
 	}

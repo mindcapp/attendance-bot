@@ -7,8 +7,10 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/yourusername/attendance-bot/storage"
+	"github.com/mindcapp/attendance-bot/metrics"
+	"github.com/mindcapp/attendance-bot/storage"
 )
 
 const studentsPerRow = 3
@@ -63,11 +65,18 @@ func New(bot *tgbotapi.BotAPI, students *storage.Students, attendance *storage.A
 
 // HandleMessage обрабатывает команды /start и /attendance.
 func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
+	timer := prometheus.NewTimer(metrics.RequestDuration.WithLabelValues("message"))
+	defer timer.ObserveDuration()
+
+	if msg.From != nil {
+		metrics.SeenUser(msg.From.ID)
+	}
 	if !msg.IsCommand() {
 		return
 	}
 	switch msg.Command() {
 	case "start", "attendance":
+		metrics.CommandsTotal.WithLabelValues("start").Inc()
 		h.clearSession(msg.Chat.ID, msg.From.ID)
 		h.sendMainMenu(msg.Chat.ID, "Что нужно сделать?")
 	}
@@ -92,6 +101,10 @@ func mainMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 
 // HandleCallback распределяет нажатия inline-кнопок по нужному сценарию.
 func (h *Handler) HandleCallback(cq *tgbotapi.CallbackQuery) {
+	timer := prometheus.NewTimer(metrics.RequestDuration.WithLabelValues("callback"))
+	defer timer.ObserveDuration()
+
+	metrics.SeenUser(cq.From.ID)
 	if cq.Message == nil {
 		h.answer(cq.ID, "")
 		return
@@ -163,6 +176,7 @@ func (h *Handler) clearSession(chatID, userID int64) {
 
 func (h *Handler) send(c tgbotapi.Chattable) {
 	if _, err := h.bot.Request(c); err != nil {
+		metrics.ErrorsTotal.WithLabelValues("send").Inc()
 		log.Printf("ошибка отправки: %v", err)
 	}
 }

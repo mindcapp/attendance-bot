@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/yourusername/attendance-bot/metrics"
 )
 
 const dateLayout = "2006-01-02"
@@ -58,11 +56,7 @@ func (a *Attendance) Save(rec Record) error {
 	}
 	out = append(out, rec)
 
-	if err := a.writeAll(out); err != nil {
-		return err
-	}
-	metrics.TotalCheckins.Add(1)
-	return nil
+	return a.writeAll(out)
 }
 
 // Today возвращает сегодняшние записи, отсортированные по номеру.

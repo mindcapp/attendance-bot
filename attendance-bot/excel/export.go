@@ -9,7 +9,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"github.com/yourusername/attendance-bot/storage"
+	"github.com/mindcapp/attendance-bot/storage"
 )
 
 // Build создаёт временный XLSX-файл с явками и возвращает путь к нему.

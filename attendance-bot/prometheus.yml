@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: attendance-bot
+    static_configs:
+      - targets: ["attendance-bot:9090"]
