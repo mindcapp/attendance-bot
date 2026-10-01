@@ -33,22 +33,19 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Copy files to VPS
+      - name: Deploy to VPS
         run: |
           SSH="ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
           $SSH "mkdir -p ${{ env.REMOTE_DIR }}"
           tar -C ${{ env.APP_DIR }} --exclude=.env --exclude=attendance.csv --exclude=logs --exclude=bin -czf - . | $SSH "tar -C ${{ env.REMOTE_DIR }} -xzf -"
-
-      - name: Create .env on VPS
-        run: |
-          ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cat > ${{ env.REMOTE_DIR }}/.env << 'EOFENV'
-TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-EOFENV"
-
-      - name: Build and restart
-        run: |
-          ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd ${{ env.REMOTE_DIR }} && docker compose down && docker compose up -d"
-
-      - name: Health check
-        run: |
-          ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'for i in $(seq 1 15); do if curl -fsS http://localhost:9090/metrics > /dev/null 2>&1; then echo "Bot is up"; exit 0; fi; sleep 2; done; echo "Bot failed"; exit 1'
+          $SSH "cd ${{ env.REMOTE_DIR }} && echo 'TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}' > .env && docker compose down && docker compose up -d"
+          sleep 5
+          for i in $(seq 1 15); do
+            if $SSH "curl -fsS http://localhost:9090/metrics > /dev/null 2>&1"; then
+              echo "Bot is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Bot failed"
+          exit 1
