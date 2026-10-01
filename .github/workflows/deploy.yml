@@ -42,8 +42,9 @@ jobs:
           tar -C ${{ env.APP_DIR }} \
             --exclude=.env --exclude=attendance.csv --exclude=logs --exclude=bin \
             -czf - . | $SSH "tar -C ${{ env.REMOTE_DIR }} -xzf -"
-          printf 'TELEGRAM_BOT_TOKEN=%s\n' "$TELEGRAM_BOT_TOKEN" \
-            | $SSH "umask 077 && cat > ${{ env.REMOTE_DIR }}/.env"
+          $SSH "cat > ${{ env.REMOTE_DIR }}/.env << 'EOF'
+TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+EOF"
 
       - name: Build and restart
         run: |
