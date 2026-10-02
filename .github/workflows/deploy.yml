@@ -29,17 +29,5 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy
-        run: |
-          ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY'
-          cd /opt/attendance-bot
-          mkdir -p /opt/attendance-bot
-          cat > .env << 'ENV'
-TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-ENV
-          docker compose down
-          docker compose up -d
-          DEPLOY
-          
-      - name: Copy code
-        run: rsync -avz --delete -e "ssh -i ~/.ssh/id_deploy" attendance-bot/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/attendance-bot/ --exclude=.env --exclude=attendance.csv --exclude=logs --exclude=bin
+      - name: Deploy to VPS
+        run: ssh -i ~/.ssh/id_deploy ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/attendance-bot && git pull && docker compose down && docker compose up -d"
