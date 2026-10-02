@@ -1,0 +1,40 @@
+services:
+  attendance-bot:
+    build: .
+    env_file:
+      - .env
+    environment:
+      ATTENDANCE_FILE: /app/attendance/attendance.csv
+      TZ: Europe/Moscow
+    volumes:
+      - ./data/students.json:/app/data/students.json:ro
+      - attendance-data:/app/attendance
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9091:9090"
+    depends_on:
+      - attendance-bot
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  attendance-data:
+  prometheus-data:
+  grafana-data:
