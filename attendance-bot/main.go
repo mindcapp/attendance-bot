@@ -73,7 +73,7 @@ func startReminderScheduler(bot *tgbotapi.BotAPI) {
 		now := time.Now()
 		
 		if now.Weekday() >= time.Monday && now.Weekday() <= time.Friday {
-			if now.Hour() == 9 && now.Minute() == 0 {
+			if now.Hour() == 7 && now.Minute() == 0 {
 				sendReminderToAll(bot)
 			}
 		}
