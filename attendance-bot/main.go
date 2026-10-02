@@ -65,6 +65,7 @@ func main() {
 			}
 		}
 	}
+
 func startReminderScheduler(bot *tgbotapi.BotAPI) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
