@@ -6,6 +6,7 @@ services:
     environment:
       ATTENDANCE_FILE: /app/attendance/attendance.csv
       TZ: Europe/Moscow
+      REMINDER_CHAT_ID: "-1004458813090"
     volumes:
       - ./data/students.json:/app/data/students.json:ro
       - attendance-data:/app/attendance
