@@ -5,6 +5,7 @@ services:
       - .env
     environment:
       ATTENDANCE_FILE: /app/attendance/attendance.csv
+      TZ: Europe/Moscow
     volumes:
       - ./data/students.json:/app/data/students.json:ro
       - attendance-data:/app/attendance

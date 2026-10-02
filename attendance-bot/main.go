@@ -46,7 +46,8 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
-        go StartReminderScheduler(bot)
+	go startReminderScheduler(bot)
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
@@ -65,41 +66,4 @@ func main() {
 			}
 		}
 	}
-
-func startReminderScheduler(bot *tgbotapi.BotAPI) {
-	ticker := time.NewTicker(1 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		now := time.Now()
-		
-		if now.Weekday() >= time.Monday && now.Weekday() <= time.Friday {
-			if now.Hour() == 7 && now.Minute() == 0 {
-				sendReminderToAll(bot)
-			}
-		}
-	}
 }
-
-func sendReminderToAll(bot *tgbotapi.BotAPI) {
-	students, err := storage.LoadStudents()
-	if err != nil {
-		log.Printf("ошибка загрузки студентов: %v", err)
-		return
-	}
-
-	message := "⏰ *Напоминание о явке*\n\nНе забудьте отметиться командой `/checkin`"
-
-	for _, student := range students {
-		msg := tgbotapi.NewMessage(int64(student.TelegramID), message)
-		msg.ParseMode = "Markdown"
-		
-		if _, err := bot.Send(msg); err != nil {
-			log.Printf("ошибка отправки напоминания %s: %v", student.Name, err)
-		}
-	}
-	
-	log.Println("напоминания отправлены всем студентам")
-}
-}
-
